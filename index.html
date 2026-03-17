@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Martedì+</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --bg: #0a0a12;
+  --s1: #12121e;
+  --s2: #1a1a2a;
+  --s3: #22223a;
+  --border: #2a2a44;
+  --text: #f0f0f8;
+  --muted: #7070a0;
+  --dim: #44446a;
+  --red: #e63946;
+  --red2: #c1121f;
+  --red-dim: rgba(230,57,70,0.15);
+  --blue: #2563eb;
+  --blue2: #1d4ed8;
+  --blue-light: #60a5fa;
+  --blue-dim: rgba(37,99,235,0.15);
+  --gold: #f5c842;
+  --gold2: #e8b820;
+  --gold-dim: rgba(245,200,66,0.12);
+  --green: #4ade80;
+  --orange: #fb923c;
+  --syne: 'Syne', sans-serif;
+  --inst: 'Instrument Sans', sans-serif;
+  --radius: 16px;
+  --tab-h: 64px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body { font-family: var(--inst); color: var(--text); display: flex; flex-direction: column; max-width: 430px; margin: 0 auto; position: relative; }
+
+.topbar { padding: 52px 20px 14px; background: var(--s1); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+.app-title { font-family: var(--syne); font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+.app-title span { color: var(--red); }
+.topbar-week { font-size: 11px; color: var(--muted); font-weight: 500; text-align: right; }
+.topbar-week strong { display: block; color: var(--text); font-size: 13px; }
+
+#scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 20px; }
+
+.tabbar { display: flex; background: var(--s1); border-top: 1px solid var(--border); flex-shrink: 0; height: var(--tab-h); padding-bottom: env(safe-area-inset-bottom); }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; padding: 8px 4px; position: relative; transition: all 0.15s; }
+.tab-icon { font-size: 19px; line-height: 1; transition: transform 0.15s; }
+.tab-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.3px; transition: color 0.15s; }
+.tab.active .tab-label { color: var(--red); }
+.tab.active .tab-icon { transform: scale(1.1); }
+.tab.active::after { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px; background: var(--red); border-radius: 0 0 3px 3px; }
+
+.page { display: none; padding: 20px; }
+.page.active { display: block; }
+
+.sec-title { font-family: var(--syne); font-size: 18px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.3px; }
+.sec-sub { font-size: 12px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+
+.card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+
+.stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-box { background: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 14px; }
+.stat-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.stat-val { font-family: var(--syne); font-size: 26px; font-weight: 800; line-height: 1; color: var(--text); }
+.stat-val.red { color: var(--red); }
+.stat-val.blue { color: var(--blue-light); }
+.stat-val.gold { color: var(--gold); }
+.stat-val.green { color: var(--green); }
+.stat-sub { font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+.part-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.part-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.part-name { font-family: var(--syne); font-size: 14px; font-weight: 700; }
+.part-role { font-size: 11px; color: var(--muted); }
+
+.btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer; font-family: var(--inst); font-size: 15px; font-weight: 600; transition: all 0.15s; -webkit-appearance: none; }
+.btn:active { transform: scale(0.97); }
+.btn-red { background: var(--red); color: #fff; }
+.btn-red:active { background: var(--red2); }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-blue:active { background: var(--blue2); }
+.btn-gold { background: var(--gold); color: #000; }
+.btn-gold:active { background: var(--gold2); }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-outline:active { background: var(--s2); }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
+.btn-sm { width: auto; padding: 8px 14px; font-size: 13px; border-radius: 8px; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.3px; }
+input, select, textarea { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 13px 14px; font-size: 16px; font-family: var(--inst); outline: none; -webkit-appearance: none; transition: border-color 0.15s; }
+input:focus, select:focus, textarea:focus { border-color: var(--red); }
+select option { background: var(--s2); }
+textarea { resize: none; min-height: 80px; font-size: 15px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+.badge-green { background: rgba(74,222,128,0.15); color: var(--green); }
+.badge-red { background: var(--red-dim); color: var(--red); }
+.badge-gold { background: var(--gold-dim); color: var(--gold); }
+.badge-blue { background: var(--blue-dim); color: var(--blue-light); }
+.badge-orange { background: rgba(251,146,60,0.15); color: var(--orange); }
+
+.client-card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+.client-card:active { border-color: var(--red); }
+.client-card.scaduta { border-color: rgba(230,57,70,0.4); opacity: 0.85; }
+.client-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.client-name { font-family: var(--syne); font-size: 16px; font-weight: 700; }
+.client-num { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.client-credits { text-align: right; }
+.credit-val { font-family: var(--syne); font-size: 20px; font-weight: 800; color: var(--gold); }
+.credit-label { font-size: 10px; color: var(--muted); }
+.credit-bar { height: 4px; background: var(--s3); border-radius: 2px; margin: 8px 0; overflow: hidden; }
+.credit-fill { height: 100%; background: var(--red); border-radius: 2px; transition: width 0.4s; }
+.client-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.week-dots { display: flex; gap: 5px; }
+.wdot { width: 8px; height: 8px; border-radius: 50%; background: var(--s3); }
+.wdot.used { background: var(--blue); }
+.scad-box { background: var(--s2); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; border-left: 3px solid var(--red); }
+.scad-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.scad-row:last-child { margin-bottom: 0; }
+.scad-label { font-size: 11px; color: var(--muted); }
+.scad-val { font-size: 13px; font-weight: 600; }
+.storico-card-item { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.storico-card-item:last-child { border-bottom: none; }
+
+/* REGISTRO TRANSAZIONI */
+.tx-item { padding: 13px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.tx-item:last-child { border-bottom: none; }
+.tx-arrow { font-size: 18px; flex-shrink: 0; }
+.tx-body { flex: 1; min-width: 0; }
+.tx-chi { font-size: 13px; font-weight: 600; }
+.tx-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.tx-importo { font-family: var(--syne); font-size: 16px; font-weight: 700; flex-shrink: 0; }
+.tx-importo.entrata { color: var(--green); }
+.tx-importo.uscita { color: var(--red); }
+
+/* SOSPESO ITEM */
+.sospeso-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.sospeso-item:last-child { border-bottom: none; padding-bottom: 0; }
+.sospeso-row { display: flex; justify-content: space-between; align-items: center; }
+.sospeso-chi { font-size: 13px; font-weight: 600; }
+.sospeso-val { font-family: var(--syne); font-size: 14px; font-weight: 700; color: var(--orange); }
+.sospeso-detail { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+
+/* HOME GUADAGNI */
+.persona-box { background: var(--s2); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.persona-nome { font-size: 14px; font-weight: 600; }
+.persona-ruolo { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.persona-guad { text-align: right; }
+.persona-val { font-family: var(--syne); font-size: 18px; font-weight: 800; }
+.persona-warn { font-size: 11px; color: var(--orange); margin-top: 2px; cursor: pointer; }
+
+.sheet-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 50; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.sheet-bg.open { display: flex; align-items: flex-end; }
+.sheet { background: var(--s1); border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); width: 100%; max-height: 92vh; overflow-y: auto; padding: 8px 20px 44px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1); }
+.sheet-bg.open .sheet { transform: translateY(0); }
+.sheet-handle { width: 36px; height: 4px; background: var(--s3); border-radius: 2px; margin: 12px auto 20px; }
+.sheet-title { font-family: var(--syne); font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+
+.martedi-item { background: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mi-left .mi-name { font-weight: 600; font-size: 15px; }
+.mi-left .mi-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.mi-right { text-align: right; flex-shrink: 0; }
+.mi-tassa { font-family: var(--syne); font-size: 17px; font-weight: 700; color: var(--green); }
+.mi-spent { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.mi-delete { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; transition: all 0.15s; -webkit-appearance: none; }
+.mi-delete:active { background: var(--red-dim); border-color: var(--red); color: var(--red); transform: scale(0.95); }
+
+.hist-item { padding: 13px 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 8px; margin: 0 -6px; transition: background 0.1s; }
+.hist-item:last-child { border-bottom: none; }
+.hist-item:active { background: var(--s2); }
+.hist-label { font-size: 13px; font-weight: 600; }
+.hist-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.hist-val { font-family: var(--syne); font-size: 15px; font-weight: 700; }
+.hist-arrow { font-size: 11px; color: var(--muted); margin-left: 6px; }
+
+.chart-wrap { background: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.chart-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+.chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+.chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.chart-bar { width: 100%; border-radius: 4px 4px 0 0; background: var(--blue); min-height: 2px; }
+.chart-bar.current { background: var(--red); }
+.chart-bar-label { font-size: 9px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; }
+.chart-bar-val { font-size: 9px; color: var(--muted); text-align: center; }
+
+.client-stat-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.client-stat-item:last-child { border-bottom: none; }
+.client-stat-rank { font-family: var(--syne); font-size: 18px; font-weight: 800; color: var(--dim); width: 24px; text-align: center; flex-shrink: 0; }
+.client-stat-rank.first { color: var(--gold); }
+.client-stat-rank.second { color: var(--muted); }
+.client-stat-rank.third { color: var(--orange); }
+.client-stat-name { flex: 1; font-weight: 600; font-size: 14px; }
+.client-stat-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.client-stat-val { font-family: var(--syne); font-size: 15px; font-weight: 700; color: var(--red); text-align: right; }
+
+.set-group { background: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; margin-bottom: 14px; }
+.set-group-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.set-row:last-child { border-bottom: none; padding-bottom: 0; }
+.set-row-label { font-size: 14px; font-weight: 500; }
+.set-row-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.set-input { width: 90px; text-align: right; padding: 8px 10px; font-size: 15px; border-radius: 8px; }
+
+.empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-text { font-size: 14px; line-height: 1.5; }
+
+.toast { position: fixed; bottom: calc(var(--tab-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--s3); border: 1px solid var(--border); border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--text); opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 100; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.tassa-custom-note { font-size: 11px; color: var(--orange); margin-top: 4px; }
+
+.autocomplete-list { background: var(--s2); border: 1px solid var(--border); border-radius: 10px; margin-top: 4px; overflow: hidden; display: none; }
+.autocomplete-list.show { display: block; }
+.autocomplete-item { padding: 12px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:active { background: var(--s3); }
+
+::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="app-title">Martedì<span>+</span></div>
+  <div class="topbar-week"><strong id="topbar-date">—</strong><span id="topbar-week-num">—</span></div>
+</div>
+
+<div id="scroll-area">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="sec-title">Dashboard</div>
+
+    <!-- GUADAGNO TOTALE -->
+    <div style="background:linear-gradient(135deg,var(--red2),var(--blue2));border-radius:var(--radius);padding:20px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Guadagno totale (escluso credito)</div>
+      <div style="font-family:var(--syne);font-size:34px;font-weight:800;color:#fff" id="d-guadagno-totale">€0,00</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">tasse ordini + costi card</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-label">Card vendute</div><div class="stat-val red" id="d-card-tot">0</div><div class="stat-sub">totale storico</div></div>
+      <div class="stat-box"><div class="stat-label">Clienti attivi</div><div class="stat-val blue" id="d-clienti">0</div><div class="stat-sub">card attive ora</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-label">Questa settimana</div><div class="stat-val green" id="d-week">€0,00</div><div class="stat-sub">tasse totali</div></div>
+      <div class="stat-box"><div class="stat-label">Totale storico</div><div class="stat-val" id="d-total">€0,00</div><div class="stat-sub">tutte le tasse</div></div>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="chart-title">📈 Guadagni gestori per settimana</div>
+      <div class="chart-bars" id="chart-bars"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- GESTORI -->
+    <div class="card">
+      <div class="part-header">
+        <div class="part-dot" style="background:var(--blue-light)"></div>
+        <div><div class="part-name">Gestori</div><div class="part-role">Tasse + <span id="d-perc-gestori">—</span>% costo card</div></div>
+      </div>
+      <div class="stat-row" style="margin-bottom:10px">
+        <div class="stat-box"><div class="stat-label">Da tasse</div><div class="stat-val blue" id="d-gest-tasse">€0,00</div></div>
+        <div class="stat-box"><div class="stat-label">Da card</div><div class="stat-val blue" id="d-gest-card">€0,00</div></div>
+      </div>
+      <div class="persona-box">
+        <div><div class="persona-nome">Edoardo Giordano</div><div class="persona-ruolo">gestore</div></div>
+        <div class="persona-guad">
+          <div class="persona-val" style="color:var(--blue-light)" id="d-guad-edo">€0,00</div>
+          <div class="persona-warn" id="d-warn-edo" style="display:none" onclick="gotoTabNamed('registro')">⚠ vedi registro</div>
+        </div>
+      </div>
+      <div class="persona-box">
+        <div><div class="persona-nome">Simone Pellegrino</div><div class="persona-ruolo">gestore</div></div>
+        <div class="persona-guad">
+          <div class="persona-val" style="color:var(--blue-light)" id="d-guad-simo">€0,00</div>
+          <div class="persona-warn" id="d-warn-simo" style="display:none" onclick="gotoTabNamed('registro')">⚠ vedi registro</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding:10px 12px;background:var(--s2);border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--muted)">Totale gestori</span>
+        <span class="stat-val blue" style="font-size:20px" id="d-gest-tot">€0,00</span>
+      </div>
+    </div>
+
+    <!-- CREATORI -->
+    <div class="card">
+      <div class="part-header">
+        <div class="part-dot" style="background:var(--red)"></div>
+        <div><div class="part-name">Creatori card</div><div class="part-role"><span id="d-perc-creatori">—</span>% costo card + penali</div></div>
+      </div>
+      <div class="stat-row" style="margin-bottom:10px">
+        <div class="stat-box"><div class="stat-label">Da card</div><div class="stat-val red" id="d-crea-tot">€0,00</div></div>
+        <div class="stat-box"><div class="stat-label">Penali</div><div class="stat-val" id="d-penali">€0,00</div></div>
+      </div>
+      <div class="persona-box">
+        <div><div class="persona-nome">Gabriele Inta</div><div class="persona-ruolo">creatore card</div></div>
+        <div class="persona-guad">
+          <div class="persona-val" style="color:var(--red)" id="d-guad-gabri">€0,00</div>
+          <div class="persona-warn" id="d-warn-gabri" style="display:none" onclick="gotoTabNamed('registro')">⚠ vedi registro</div>
+        </div>
+      </div>
+      <div class="persona-box">
+        <div><div class="persona-nome">Mario Bressano</div><div class="persona-ruolo">creatore card</div></div>
+        <div class="persona-guad">
+          <div class="persona-val" style="color:var(--red)" id="d-guad-mario">€0,00</div>
+          <div class="persona-warn" id="d-warn-mario" style="display:none" onclick="gotoTabNamed('registro')">⚠ vedi registro</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="chart-wrap">
+      <div class="chart-title">🏆 Top clienti per spesa totale</div>
+      <div id="top-clienti"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="sec-title" style="font-size:15px">Storico settimane <span style="font-size:11px;color:var(--muted);font-family:var(--inst);font-weight:400">↓ tocca per dettagli</span></div>
+    <div id="d-history"></div>
+  </div>
+
+  <!-- CARD -->
+  <div class="page" id="page-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="sec-title" style="margin-bottom:0">Card attive</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="openSheet('sheet-storico-card')" style="font-size:12px">📋 Storico</button>
+        <button class="btn btn-red btn-sm" onclick="openSheet('sheet-nuova-card')">+ Nuova</button>
+      </div>
+    </div>
+    <!-- Sezione card scadute -->
+    <div id="lista-scadute-header" style="display:none;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:600;color:var(--red);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">⏰ Scadute — rinnova o archivia</div>
+      <div id="lista-scadute"></div>
+      <div class="divider"></div>
+    </div>
+    <div id="lista-card"><div class="empty"><div class="empty-icon">♦</div><div class="empty-text">Nessuna card attiva.<br>Aggiungine una!</div></div></div>
+  </div>
+
+  <!-- MARTEDI -->
+  <div class="page" id="page-martedi">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div><div class="sec-title" style="margin-bottom:0">Martedì</div><div class="sec-sub" id="martedi-week-label">Settimana corrente</div></div>
+      <button class="btn btn-red btn-sm" onclick="openSheet('sheet-ordine')">+ Ordine</button>
+    </div>
+    <div class="stat-row" style="margin-bottom:14px">
+      <div class="stat-box"><div class="stat-label">Tasse questa sett.</div><div class="stat-val green" id="m-tasse-sett">€0,00</div></div>
+      <div class="stat-box"><div class="stat-label">Ordini</div><div class="stat-val" id="m-ordini-sett">0</div></div>
+    </div>
+    <div id="lista-ordini"><div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">Nessun ordine questa settimana.</div></div></div>
+  </div>
+
+  <!-- IMPOSTAZIONI -->
+  <div class="page" id="page-impostazioni">
+    <div class="sec-title">Impostazioni</div>
+    <div class="set-group">
+      <div class="set-group-title">💳 Card</div>
+      <div class="set-row"><div><div class="set-row-label">Costo card</div><div class="set-row-sub">prezzo vendita tessera</div></div><input class="set-input" type="number" id="s-costo-card" step="0.01" min="0.01"></div>
+      <div class="set-row"><div><div class="set-row-label">Durata card</div><div class="set-row-sub">numero di settimane</div></div><input class="set-input" type="number" id="s-durata" step="1" min="1"></div>
+      <div class="set-row"><div><div class="set-row-label">Penale rimborso</div><div class="set-row-sub">€ da sottrarre al rimborso</div></div><input class="set-input" type="number" id="s-penale" step="0.01" min="0"></div>
+    </div>
+    <div class="set-group">
+      <div class="set-group-title">📊 Percentuali guadagni card</div>
+      <div class="set-row"><div><div class="set-row-label">% Gestori</div><div class="set-row-sub">Edo & Simo</div></div><input class="set-input" type="number" id="s-perc-gestori" step="1" min="0" max="100"></div>
+      <div class="set-row"><div><div class="set-row-label">% Creatori</div><div class="set-row-sub">Gabri & Mario (resto)</div></div><input class="set-input" type="number" id="s-perc-creatori" step="1" min="0" max="100" readonly style="color:var(--muted)"></div>
+    </div>
+    <div class="set-group">
+      <div class="set-group-title">🏷️ Tasse ordine</div>
+      <div class="set-row"><div><div class="set-row-label">Tassa CON card</div><div class="set-row-sub">€ aggiunta per chi ha la card</div></div><input class="set-input" type="number" id="s-tassa-card" step="0.01" min="0"></div>
+      <div class="set-row"><div><div class="set-row-label">Tassa SENZA card</div><div class="set-row-sub">€ aggiunta per chi non ha card</div></div><input class="set-input" type="number" id="s-tassa-nocard" step="0.01" min="0"></div>
+    </div>
+    <button class="btn btn-red" onclick="salvaImpostazioni()">Salva impostazioni</button>
+    <div class="divider"></div>
+    <div class="set-group"><div class="set-group-title">⚠️ Zona pericolosa</div><button class="btn btn-danger" onclick="resetDati()">Reset tutti i dati</button></div>
+    <div class="divider"></div>
+    <div class="set-group">
+      <div class="set-group-title">💾 Backup dati</div>
+      <div style="display:grid;gap:10px">
+        <button class="btn btn-outline" onclick="esportaDati()">⬇ Esporta dati (JSON)</button>
+        <label class="btn btn-outline" style="cursor:pointer">
+          ⬆ Importa dati (JSON)
+          <input type="file" accept=".json" id="import-file" style="display:none" onchange="importaDati(event)">
+        </label>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5">Esporta per backup o per migrare su una nuova versione dell'app.</div>
+    </div>
+  </div>
+
+  <!-- REGISTRO TRANSAZIONI -->
+  <div class="page" id="page-registro">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sec-title" style="margin-bottom:0">Registro</div>
+      <button class="btn btn-red btn-sm" onclick="openSheet('sheet-nuova-transazione')">+ Transazione</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Passaggi di denaro tra persone e portafoglio</div>
+
+    <!-- CONTI IN SOSPESO -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">⚠ Conti in sospeso</div>
+      <div id="reg-sospeso"><div style="font-size:13px;color:var(--muted);text-align:center;padding:8px">Nessun conto in sospeso</div></div>
+    </div>
+
+    <!-- SALDI PERSONE -->
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Saldi portafogli</div>
+    <div class="stat-row" style="margin-bottom:4px">
+      <div class="stat-box" onclick="apriDettaglioPersona('edoardo')" style="cursor:pointer">
+        <div class="stat-label">Edoardo</div>
+        <div class="stat-val" id="saldo-edoardo" style="font-size:20px">€0,00</div>
+        <div class="stat-sub">gestore</div>
+      </div>
+      <div class="stat-box" onclick="apriDettaglioPersona('simone')" style="cursor:pointer">
+        <div class="stat-label">Simone</div>
+        <div class="stat-val" id="saldo-simone" style="font-size:20px">€0,00</div>
+        <div class="stat-sub">gestore</div>
+      </div>
+    </div>
+    <div class="stat-row" style="margin-bottom:4px">
+      <div class="stat-box" onclick="apriDettaglioPersona('gabriele')" style="cursor:pointer">
+        <div class="stat-label">Gabriele</div>
+        <div class="stat-val" id="saldo-gabriele" style="font-size:20px">€0,00</div>
+        <div class="stat-sub">creatore card</div>
+      </div>
+      <div class="stat-box" onclick="apriDettaglioPersona('mario')" style="cursor:pointer">
+        <div class="stat-label">Mario</div>
+        <div class="stat-val" id="saldo-mario" style="font-size:20px">€0,00</div>
+        <div class="stat-sub">creatore card</div>
+      </div>
+    </div>
+    <div class="stat-box" onclick="apriDettaglioPersona('portafoglio')" style="cursor:pointer;margin-bottom:12px;padding:16px 14px;background:var(--s1);border:1px solid var(--border);border-radius:var(--radius)">
+      <div class="stat-label">💼 Portafoglio Pollo</div>
+      <div class="stat-val gold" id="saldo-portafoglio" style="font-size:20px">€0,00</div>
+      <div class="stat-sub">deposito crediti collettivo</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- LISTA TRANSAZIONI -->
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Tutte le transazioni</div>
+    <div id="reg-lista-transazioni"><div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Nessuna transazione ancora.</div></div></div>
+  </div>
+
+</div>
+
+<div class="tabbar">
+  <div class="tab active" onclick="gotoTab('dashboard',this)"><div class="tab-icon">◈</div><div class="tab-label">Home</div></div>
+  <div class="tab" onclick="gotoTab('card',this)"><div class="tab-icon">♦</div><div class="tab-label">Card</div></div>
+  <div class="tab" onclick="gotoTab('martedi',this)"><div class="tab-icon">🛒</div><div class="tab-label">Martedì</div></div>
+  <div class="tab" onclick="gotoTab('registro',this)"><div class="tab-icon">💸</div><div class="tab-label">Registro</div></div>
+  <div class="tab" onclick="gotoTab('impostazioni',this)"><div class="tab-icon">⚙</div><div class="tab-label">Settings</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,10,18,0.9);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <div style="font-size:28px">♦</div>
+  <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red)">Caricamento...</div>
+  <div style="font-size:12px;color:#7070a0">sincronizzazione dati</div>
+</div>
+
+<!-- SHEET: Nuova Card -->
+<div class="sheet-bg" id="sheet-nuova-card">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">♦ Nuova Card</div>
+    <div class="field">
+      <label>Nome cliente</label>
+      <input id="nc-nome" type="text" placeholder="Es. Luca R." oninput="autocompleteCliente(this.value,'nc-ac')" autocomplete="off">
+      <div class="autocomplete-list" id="nc-ac"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>N° tessera</label><input id="nc-num" type="text" placeholder="001"></div>
+      <div class="field"><label>Credito iniziale (€)</label><input id="nc-credito" type="number" step="0.01" min="0" placeholder="0.00" oninput="updateCardPreview()"></div>
+    </div>
+    <div class="field">
+      <label>Settimana di attivazione (primo martedì)</label>
+      <select id="nc-settimana" onchange="aggiornaCardSettimana()"></select>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="nc-settimana-label"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px" id="nc-scad-preview"></div>
+    </div>
+    <div class="field"><label>Note (opzionale)</label><textarea id="nc-note" placeholder="Eventuali note..."></textarea></div>
+    <div style="background:var(--s2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted)">
+      Costo card: <strong id="nc-preview-cost" style="color:var(--gold)">€0,00</strong> → Gestori: <strong id="nc-preview-gest" style="color:var(--blue-light)">€0,00</strong> / Creatori: <strong id="nc-preview-crea" style="color:var(--red)">€0,00</strong><br>
+      <span style="display:block;margin-top:4px">💡 La tassa ordine viene scalata dal credito card</span>
+    </div>
+    <button class="btn btn-red" onclick="aggiungiCard()">Crea card</button>
+    <div style="height:10px"></div>
+    <button class="btn btn-outline" onclick="closeSheet('sheet-nuova-card')">Annulla</button>
+  </div>
+</div>
+
+<!-- SHEET: Dettaglio Card -->
+<div class="sheet-bg" id="sheet-card-detail">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="detail-title">Card #—</div>
+    <input type="hidden" id="detail-id">
+    <!-- Box date scadenza -->
+    <div class="scad-box">
+      <div class="scad-row"><span class="scad-label">Data inizio</span><span class="scad-val" id="detail-data-inizio">—</span></div>
+      <div class="scad-row"><span class="scad-label">Scadenza</span><span class="scad-val" id="detail-data-scad">—</span></div>
+      <div class="scad-row" style="margin-top:6px"><span class="scad-label">Stato</span><span id="detail-stato-box"></span></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-label">Credito rimasto</div><div class="stat-val gold" id="detail-credito">€0,00</div></div>
+      <div class="stat-box"><div class="stat-label">Durata</div><div class="stat-val" id="detail-sett-usate" style="font-size:18px">—</div></div>
+    </div>
+
+    <!-- Azioni card ATTIVA -->
+    <div id="detail-azioni-attiva">
+      <div class="divider"></div>
+      <div class="field"><label>Ricarica credito (€)</label><input id="det-ricarica" type="number" step="0.01" min="0.01" placeholder="0.00"></div>
+      <button class="btn btn-gold" onclick="ricaricaCard()" style="margin-bottom:10px">+ Ricarica credito</button>
+      <div class="divider"></div>
+      <div class="field">
+        <label>% Gestori per questa card</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="det-perc-gestori" type="number" min="0" max="100" step="1" placeholder="80" style="flex:1">
+          <button onclick="salvaPercCard()" style="background:var(--blue);color:#fff;border:none;border-radius:10px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;-webkit-appearance:none">Salva %</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px" id="det-perc-note">Modifica la percentuale per questa card — aggiorna anche i guadagni passati.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="field"><label>Penale rimborso</label></div>
+      <button class="btn btn-outline" onclick="registraPenale()" style="margin-bottom:10px">Registra penale (€<span id="det-penale-val">0,20</span>)</button>
+      <div class="divider"></div>
+      <button class="btn btn-danger" onclick="annullaCard()">✕ Annulla card (come se non fosse mai esistita)</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Rimuove guadagni e conteggi associati.</div>
+    </div>
+
+    <!-- Azioni card SCADUTA -->
+    <div id="detail-azioni-scaduta" style="display:none">
+      <div class="divider"></div>
+      <button class="btn btn-blue" onclick="rinnovaCard()" style="margin-bottom:10px">♻ Rinnova card (<span id="det-durata-sett">4</span> settimane)</button>
+      <div class="divider"></div>
+      <button class="btn btn-danger" onclick="eliminaCard()">🗄 Archivia → sposta in storico</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">I dati storici vengono mantenuti nello storico.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: Storico card -->
+<div class="sheet-bg" id="sheet-storico-card">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📋 Storico card</div>
+    <div id="lista-storico-card"><div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nessuna card nello storico.</div></div></div>
+  </div>
+</div>
+
+<!-- SHEET: Ordine -->
+<div class="sheet-bg" id="sheet-ordine">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">🛒 Registra ordine</div>
+
+    <!-- SELEZIONE SETTIMANA -->
+    <div class="field">
+      <label>Settimana di appartenenza</label>
+      <select id="ord-settimana" onchange="aggiornaOrdSettimana()"></select>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="ord-settimana-label"></div>
+    </div>
+
+    <div class="field">
+      <label>Tipo cliente</label>
+      <select id="ord-tipo" onchange="aggiornaTipoOrdine()">
+        <option value="card">Ha la card</option>
+        <option value="nocard">Non ha la card</option>
+      </select>
+    </div>
+    <div id="ord-card-section">
+      <div class="field"><label>Seleziona card</label><select id="ord-card-sel" onchange="aggiornaInfoCard()"></select></div>
+      <div class="field">
+        <label>Quanto ha speso al pollo (€)</label>
+        <input id="ord-importo-pasto" type="number" step="0.01" min="0" placeholder="Es. 5.00" oninput="aggiornaInfoCard()" style="font-size:16px">
+        <div style="font-size:11px;color:var(--blue-light);margin-top:6px;padding:8px 12px;background:var(--blue-dim);border-radius:8px" id="ord-card-info">
+          💡 Inserisci l'importo del pasto — verrà scalato dal credito della card
+        </div>
+      </div>
+    </div>
+    <div id="ord-nocard-section" style="display:none">
+      <div class="field">
+        <label>Nome cliente</label>
+        <input id="ord-nome-nocard" type="text" placeholder="Es. Cliente occasionale" oninput="autocompleteCliente(this.value,'nc-ac-ord')" autocomplete="off">
+        <div class="autocomplete-list" id="nc-ac-ord"></div>
+      </div>
+    </div>
+    <div style="background:var(--s2);border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:0.3px">TASSA ORDINE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Importo tassa (€)</div>
+          <input id="ord-tassa-input" type="number" step="0.01" min="0" placeholder="0.00" oninput="onTassaInput()" style="font-size:16px">
+        </div>
+        <button onclick="resetTassaDefault()" style="background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:8px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;-webkit-appearance:none;flex-shrink:0;margin-top:18px">Reset</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px" id="ord-tassa-note"></div>
+      <div class="tassa-custom-note" id="ord-tassa-custom-note" style="display:none">✎ Tassa modificata manualmente</div>
+    </div>
+    <button class="btn btn-red" onclick="registraOrdine()">Registra ordine</button>
+    <div style="height:10px"></div>
+    <button class="btn btn-outline" onclick="closeSheet('sheet-ordine')">Annulla</button>
+  </div>
+</div>
+
+<!-- SHEET: Dettaglio Settimana -->
+<div class="sheet-bg" id="sheet-week-detail">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="week-detail-title">Settimana —</div>
+    <div id="week-detail-martedi" style="font-size:13px;color:var(--muted);margin-bottom:16px;padding:10px 12px;background:var(--s2);border-radius:10px;border-left:3px solid var(--red)"></div>
+    <div class="stat-row" style="margin-bottom:16px">
+      <div class="stat-box"><div class="stat-label">Tasse totali</div><div class="stat-val green" id="week-detail-tasse">€0,00</div></div>
+      <div class="stat-box"><div class="stat-label">Ordini</div><div class="stat-val" id="week-detail-ordini">0</div></div>
+    </div>
+    <div id="week-detail-list"></div>
+  </div>
+</div>
+
+<!-- SHEET: Nuova Transazione -->
+<div class="sheet-bg" id="sheet-nuova-transazione">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">💸 Nuova transazione</div>
+
+    <!-- SELEZIONE SETTIMANA -->
+    <div class="field">
+      <label>Settimana di riferimento</label>
+      <select id="tx-settimana" onchange="aggiornaTxSettimanaLabel()"></select>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="tx-settimana-label"></div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Da (chi paga)</label>
+        <select id="tx-da" onchange="aggiornaTxTipo()">
+          <option value="cliente">Cliente (esterno)</option>
+          <option value="edoardo">Edoardo</option>
+          <option value="simone">Simone</option>
+          <option value="gabriele">Gabriele</option>
+          <option value="mario">Mario</option>
+          <option value="portafoglio">Portafoglio Pollo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>A (chi riceve)</label>
+        <select id="tx-a" onchange="aggiornaTxTipo()">
+          <option value="portafoglio">Portafoglio Pollo</option>
+          <option value="edoardo">Edoardo</option>
+          <option value="simone">Simone</option>
+          <option value="gabriele">Gabriele</option>
+          <option value="mario">Mario</option>
+          <option value="cliente">Cliente (esterno)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" id="tx-cliente-nome-wrap" style="display:none">
+      <label id="tx-cliente-nome-label">Nome cliente</label>
+      <input id="tx-cliente-nome" type="text" placeholder="Es. Luca R." oninput="autocompleteCliente(this.value,'tx-ac')" autocomplete="off">
+      <div class="autocomplete-list" id="tx-ac"></div>
+      <div style="margin-top:8px" id="tx-clienti-noti-wrap"></div>
+    </div>
+    <div class="field">
+      <label>Importo (€)</label>
+      <input id="tx-importo" type="number" step="0.01" min="0.01" placeholder="0.00">
+    </div>
+    <div class="field">
+      <label>Tipo pagamento</label>
+      <select id="tx-tipo">
+        <option value="tassa">Tassa ordine</option>
+        <option value="credito_card">Credito card</option>
+        <option value="costo_card">Costo card</option>
+        <option value="penale">Penale rimborso</option>
+        <option value="liquidazione">Liquidazione guadagni</option>
+        <option value="altro">Altro</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (opzionale)</label>
+      <input id="tx-note" type="text" placeholder="Es. pagamento martedì 4 marzo">
+    </div>
+    <button class="btn btn-red" onclick="salvaTransazione()">Salva transazione</button>
+    <div style="height:10px"></div>
+    <button class="btn btn-outline" onclick="closeSheet('sheet-nuova-transazione')">Annulla</button>
+  </div>
+</div>
+
+<!-- SHEET: Dettaglio persona -->
+<div class="sheet-bg" id="sheet-persona-detail">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="persona-detail-title">—</div>
+    <div class="stat-row" style="margin-bottom:16px">
+      <div class="stat-box"><div class="stat-label">Guadagno teorico</div><div class="stat-val green" id="pd-teorico">€0,00</div></div>
+      <div class="stat-box"><div class="stat-label">Ricevuto</div><div class="stat-val" id="pd-ricevuto">€0,00</div></div>
+    </div>
+    <div id="pd-sospeso-box" style="display:none;background:var(--s2);border-radius:10px;padding:12px;margin-bottom:16px;border-left:3px solid var(--orange)">
+      <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px">In sospeso</div>
+      <div id="pd-sospeso-txt" style="font-size:13px;color:var(--text)"></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Movimenti</div>
+    <div id="pd-movimenti"></div>
+  </div>
+</div>
+
+<!-- SHEET: Dettaglio Cliente (top clienti) -->
+<div class="sheet-bg" id="sheet-cliente-detail">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="cd-title">—</div>
+    <div class="stat-row" style="margin-bottom:12px">
+      <div class="stat-box"><div class="stat-label">Tasse pagate</div><div class="stat-val green" id="cd-tasse">€0,00</div></div>
+      <div class="stat-box"><div class="stat-label">Costo card</div><div class="stat-val red" id="cd-costi">€0,00</div></div>
+    </div>
+    <div class="stat-row" style="margin-bottom:16px">
+      <div class="stat-box"><div class="stat-label">Penali</div><div class="stat-val" id="cd-penali">€0,00</div></div>
+      <div class="stat-box"><div class="stat-label">Totale versato</div><div class="stat-val gold" id="cd-totale">€0,00</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Storico movimenti</div>
+    <div id="cd-movimenti"></div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAdro0lRN-n5D4dhBeTz8g8PWF48YAZLrw",
+  authDomain: "qrcode-generator-f5335.firebaseapp.com",
+  projectId: "qrcode-generator-f5335",
+  storageBucket: "qrcode-generator-f5335.firebasestorage.app",
+  messagingSenderId: "465412841272",
+  appId: "1:465412841272:web:c282cc195b415b3f16ebcd"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ── PERSONE fisse ──
+const PERSONE = {
+  edoardo:    { label: 'Edoardo Giordano',  ruolo: 'gestore' },
+  simone:     { label: 'Simone Pellegrino', ruolo: 'gestore' },
+  gabriele:   { label: 'Gabriele Inta',     ruolo: 'creatore card' },
+  mario:      { label: 'Mario Bressano',    ruolo: 'creatore card' },
+  portafoglio:{ label: 'Portafoglio Pollo', ruolo: 'deposito collettivo' },
+  cliente:    { label: 'Cliente',           ruolo: 'esterno' }
+};
+
+const DEFAULT_SETTINGS = { costoCard:0.80, durataSettimane:4, penaleRimborso:0.20, percGestori:80, tassaConCard:0.20, tassaSenzaCard:0.50 };
+let state = {
+  settings: {...DEFAULT_SETTINGS},
+  cards: [], cardStorico: [],
+  ordini: [], venditeCard: [], penali: [],
+  clienti: [],
+  transazioni: []   // registro manuale
+};
+let tassaModificataManualmente = false;
+
+// ── PERSISTENZA ──
+function saveLocal() { try { localStorage.setItem('martediplus_v4', JSON.stringify(state)); } catch(e) {} }
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('martediplus_v4')
+             || localStorage.getItem('martediplus_v3')
+             || localStorage.getItem('martediplus_v2');
+    if (raw) {
+      const l = JSON.parse(raw);
+      state = {...state, ...l};
+      state.settings = {...DEFAULT_SETTINGS, ...l.settings};
+      if (!state.clienti) state.clienti = [];
+      if (!state.cardStorico) state.cardStorico = [];
+      if (!state.transazioni) state.transazioni = [];
+    }
+  } catch(e) {}
+}
+async function saveToFirebase(coll, id, data) {
+  try { await db.collection('martediplus_'+coll).doc(String(id)).set(data); } catch(e) {}
+}
+async function deleteFromFirebase(coll, id) {
+  try { await db.collection('martediplus_'+coll).doc(String(id)).delete(); } catch(e) {}
+}
+// Converte tutti i weekKey vecchi (formato "2025-W12") nel nuovo formato data martedì ("2025-03-11")
+// Aggiorna anche dataCreazione, dataInizio, dataScadenza mancanti nelle card vecchie
+function normalizzaDatiVecchi() {
+  let changed = false;
+
+  // Normalizza weekKey su ordini
+  state.ordini.forEach(o => {
+    if (o.weekKey && o.weekKey.includes('-W')) {
+      o.weekKey = getMartediSettimana(o.weekKey);
+      if (!o.data) o.data = o.weekKey;
+      changed = true;
+    }
+    if (!o.weekKey && o.data) {
+      o.weekKey = getMartediSettimana(o.data);
+      changed = true;
+    }
+  });
+
+  // Normalizza weekKey su venditeCard
+  state.venditeCard.forEach(v => {
+    if (v.weekKey && v.weekKey.includes('-W')) {
+      v.weekKey = getMartediSettimana(v.weekKey);
+      changed = true;
+    }
+    if (!v.weekKey && v.data) {
+      v.weekKey = getMartediSettimana(v.data);
+      changed = true;
+    }
+  });
+
+  // Normalizza transazioni
+  state.transazioni.forEach(tx => {
+    if (tx.weekKey && tx.weekKey.includes('-W')) {
+      tx.weekKey = getMartediSettimana(tx.weekKey);
+      changed = true;
+    }
+    if (!tx.weekKey && tx.data) {
+      tx.weekKey = getMartediSettimana(tx.data);
+      changed = true;
+    }
+  });
+
+  // Normalizza card: aggiungi dataScadenza se mancante
+  state.cards.forEach(c => {
+    if (!c.dataInizio && c.dataCreazione) {
+      c.dataInizio = getMartediSettimana(c.dataCreazione);
+      changed = true;
+    }
+    if (!c.dataScadenza && c.dataInizio) {
+      c.dataScadenza = calcolaScadenza(c.dataInizio, c.durataSettimane || state.settings.durataSettimane);
+      changed = true;
+    }
+    // settimaneUsate → non più usato, ma mantieni compatibilità
+  });
+
+  if (changed) saveLocal();
+}
+
+async function loadFromFirebase() {
+  try {
+    showLoading(true);
+    const ss = await db.collection('martediplus_settings').doc('main').get();
+    if (ss.exists) state.settings = {...DEFAULT_SETTINGS, ...ss.data()};
+    state.cards        = (await db.collection('martediplus_cards').get()).docs.map(d=>d.data());
+    state.cardStorico  = (await db.collection('martediplus_cardStorico').get()).docs.map(d=>d.data());
+    state.ordini       = (await db.collection('martediplus_ordini').get()).docs.map(d=>d.data());
+    state.venditeCard  = (await db.collection('martediplus_venditeCard').get()).docs.map(d=>d.data());
+    state.penali       = (await db.collection('martediplus_penali').get()).docs.map(d=>d.data());
+    state.clienti      = (await db.collection('martediplus_clienti').get()).docs.map(d=>d.data().nome);
+    state.transazioni  = (await db.collection('martediplus_transazioni').get()).docs.map(d=>d.data());
+    normalizzaDatiVecchi();
+    saveLocal(); showLoading(false); renderAll();
+  } catch(e) { showLoading(false); showToast('⚠ Offline — dati locali'); renderAll(); }
+}
+function showLoading(show) { const el=document.getElementById('loading-overlay'); if(el) el.style.display=show?'flex':'none'; }
+
+// ── BACKUP ──
+function esportaDati() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='martediplus_backup_'+today()+'.json'; a.click();
+  URL.revokeObjectURL(url); showToast('✓ Esportato');
+}
+function importaDati(event) {
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (!imp.cards||!imp.settings) throw new Error('Formato non valido');
+      state = {...state, ...imp};
+      state.settings = {...DEFAULT_SETTINGS, ...imp.settings};
+      if (!state.transazioni) state.transazioni = [];
+      if (!state.cardStorico) state.cardStorico = [];
+      saveLocal(); showToast('✓ Importato!'); renderAll();
+    } catch(err) { showToast('⚠ File non valido'); }
+  };
+  reader.readAsText(file); event.target.value='';
+}
+
+// ── CLIENTI ──
+async function salvaCliente(nome) {
+  if (!nome || state.clienti.includes(nome)) return;
+  state.clienti.push(nome);
+  await saveToFirebase('clienti', nome.replace(/\s+/g,'_').toLowerCase(), {nome});
+  saveLocal();
+}
+function autocompleteCliente(val, listId) {
+  const list = document.getElementById(listId); if(!list) return;
+  if (!val||val.length<1) { list.classList.remove('show'); return; }
+  const matches = state.clienti.filter(c=>c.toLowerCase().includes(val.toLowerCase())&&c!==val);
+  if (matches.length===0) { list.classList.remove('show'); return; }
+  list.innerHTML = matches.slice(0,5).map(c=>`<div class="autocomplete-item" onclick="selezionaCliente('${c.replace(/'/g,"\\'")}','${listId}')">${c}</div>`).join('');
+  list.classList.add('show');
+}
+function selezionaCliente(nome, listId) {
+  if (listId==='nc-ac') document.getElementById('nc-nome').value=nome;
+  if (listId==='nc-ac-ord') document.getElementById('ord-nome-nocard').value=nome;
+  if (listId==='tx-ac') document.getElementById('tx-cliente-nome').value=nome;
+  document.getElementById(listId).classList.remove('show');
+}
+
+// ── UTILS ──
+function fmt(n) { return '€'+Number(n||0).toFixed(2).replace('.',','); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function showToast(msg,dur=2000) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
+function fmtDate(str) {
+  if (!str) return '—';
+  // Gestisce sia date normali che weekKey vecchi formato W
+  const normalized = str.includes('-W') ? getMartediSettimana(str) : str;
+  const d = new Date(normalized+'T12:00:00');
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'2-digit'});
+}
+function fmtDateLong(str) {
+  if (!str) return '—';
+  const normalized = str.includes('-W') ? getMartediSettimana(str) : str;
+  const d = new Date(normalized+'T12:00:00');
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'long',year:'numeric'});
+}
+
+function getMartediSettimana(dateStr) {
+  if (!dateStr) return today();
+  // Gestisce vecchio formato "2025-W12" e nuovo formato "2025-03-11"
+  if (dateStr.includes('-W')) {
+    // Converte ISO week format in data del martedì
+    const [yearStr, wStr] = dateStr.split('-W');
+    const year = parseInt(yearStr), week = parseInt(wStr);
+    const jan4 = new Date(year, 0, 4); // 4 gennaio è sempre nella settimana 1
+    const startW1 = new Date(jan4);
+    startW1.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1); // lunedì sett.1
+    const weekStart = new Date(startW1.getTime() + (week-1)*7*86400000);
+    const tuesday = new Date(weekStart.getTime() + 1*86400000); // +1 = martedì
+    return tuesday.toISOString().split('T')[0];
+  }
+  const d = new Date(dateStr+'T12:00:00');
+  if (isNaN(d.getTime())) return today();
+  const dow = d.getDay();
+  const back = dow===2?0:(dow>2?dow-2:dow+5);
+  const mar = new Date(d.getTime()-back*86400000);
+  return mar.toISOString().split('T')[0];
+}
+function currentWeekKey() { return getMartediSettimana(today()); }
+function getWeekKey(dateStr) { return getMartediSettimana(dateStr); }
+function fmtWeekLabel(wk) {
+  if (!wk) return '—';
+  const normalized = getMartediSettimana(wk); // normalizza anche vecchi formati
+  const d = new Date(normalized+'T12:00:00');
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'short'});
+}
+function getMartediDiSettimana(wk) {
+  if (!wk) return '—';
+  const normalized = getMartediSettimana(wk);
+  const d = new Date(normalized+'T12:00:00');
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+}
+function calcolaScadenza(dataInizio, durata) {
+  const d = new Date(dataInizio+'T12:00:00');
+  d.setDate(d.getDate()+durata*7-1);
+  return d.toISOString().split('T')[0];
+}
+function isScaduta(card) { return card.dataScadenza ? today()>card.dataScadenza : false; }
+function prossimoMartedi() {
+  const d=new Date(), dow=d.getDay();
+  d.setDate(d.getDate()+(dow===2?7:(2-dow+7)%7));
+  return d.toISOString().split('T')[0];
+}
+function nomePersona(id) { return PERSONE[id]?.label || id; }
+
+// Popola un <select> con le ultime N settimane + corrente + prossime 2
+// offset = settimana selezionata di default (0 = corrente, -1 = precedente, ...)
+function popolaSettimaneSelect(selId, labelId, defaultOffset) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const opts = [];
+  // Sett. 1 = settimana corrente, Sett. 0 = scorsa, Sett. -1 = 2 fa, ecc.
+  for (let i = -8; i <= 2; i++) {
+    const d = new Date();
+    const dow = d.getDay();
+    const back = dow===2?0:(dow>2?dow-2:dow+5);
+    d.setDate(d.getDate() - back + i*7);
+    const wk = d.toISOString().split('T')[0];
+    const settNum = i + 1; // i=0 → Sett.1
+    const label = settNum===1 ? '📍 Sett. 1 — questa ('+fmtWeekLabel(wk)+')'
+                : settNum > 1 ? 'Sett. '+settNum+' — futura ('+fmtWeekLabel(wk)+')'
+                : settNum===0 ? 'Sett. 0 — scorsa ('+fmtWeekLabel(wk)+')'
+                :               'Sett. '+settNum+' — '+Math.abs(settNum-1)+' fa ('+fmtWeekLabel(wk)+')';
+    opts.push({wk, label, offset:i});
+  }
+  sel.innerHTML = opts.map(o=>`<option value="${o.wk}" ${o.offset===defaultOffset?'selected':''}>${o.label}</option>`).join('');
+  // Aggiorna label sotto il select
+  if (labelId) {
+    const el = document.getElementById(labelId);
+    if (el) el.textContent = '📅 Martedì ' + getMartediDiSettimana(sel.value);
+  }
+}
+function aggiornaOrdSettimana() {
+  const wk = document.getElementById('ord-settimana').value;
+  const el = document.getElementById('ord-settimana-label');
+  if (el) el.textContent = '📅 Martedì ' + getMartediDiSettimana(wk);
+}
+function aggiornaTxSettimanaLabel() {
+  const wk = document.getElementById('tx-settimana')?.value;
+  const el = document.getElementById('tx-settimana-label');
+  if (el && wk) el.textContent = '📅 Martedì ' + getMartediDiSettimana(wk);
+}
+
+// ── NAVIGAZIONE ──
+function gotoTab(page, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('scroll-area').scrollTop=0;
+  renderAll();
+}
+function gotoTabNamed(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{ if(t.getAttribute('onclick')&&t.getAttribute('onclick').includes("'"+page+"'")) t.classList.add('active'); });
+  document.getElementById('scroll-area').scrollTop=0;
+  renderAll();
+}
+function openSheet(id) {
+  if (id==='sheet-nuova-card') {
+    popolaSettimaneSelect('nc-settimana', 'nc-settimana-label', 0);
+    updateCardPreview();
+  }
+  if (id==='sheet-ordine') {
+    tassaModificataManualmente=false;
+    popolaSettimaneSelect('ord-settimana', 'ord-settimana-label', 0);
+    aggiornaTipoOrdine();
+    popolaCardSelect();
+  }
+  if (id==='sheet-storico-card') renderStoricoCard();
+  if (id==='sheet-nuova-transazione') {
+    document.getElementById('tx-cliente-nome').value='';
+    document.getElementById('tx-importo').value='';
+    document.getElementById('tx-note').value='';
+    document.getElementById('tx-da').value='cliente';
+    document.getElementById('tx-a').value='portafoglio';
+    document.getElementById('tx-clienti-noti-wrap').innerHTML='';
+    popolaSettimaneSelect('tx-settimana', 'tx-settimana-label', 0);
+    aggiornaTxTipo();
+  }
+  document.getElementById(id).classList.add('open');
+}
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.sheet-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open');}));
+
+// ── SETTINGS ──
+function loadSettingsUI() {
+  const s=state.settings;
+  document.getElementById('s-costo-card').value=s.costoCard;
+  document.getElementById('s-durata').value=s.durataSettimane;
+  document.getElementById('s-penale').value=s.penaleRimborso;
+  document.getElementById('s-perc-gestori').value=s.percGestori;
+  document.getElementById('s-perc-creatori').value=100-s.percGestori;
+  document.getElementById('s-tassa-card').value=s.tassaConCard;
+  document.getElementById('s-tassa-nocard').value=s.tassaSenzaCard;
+}
+document.getElementById('s-perc-gestori').addEventListener('input',function(){
+  document.getElementById('s-perc-creatori').value=100-Math.min(100,Math.max(0,parseInt(this.value)||0));
+});
+async function salvaImpostazioni() {
+  const pg=parseInt(document.getElementById('s-perc-gestori').value)||0;
+  state.settings={
+    costoCard: parseFloat(document.getElementById('s-costo-card').value)||0.80,
+    durataSettimane: parseInt(document.getElementById('s-durata').value)||4,
+    penaleRimborso: parseFloat(document.getElementById('s-penale').value)||0.20,
+    percGestori: Math.min(100,Math.max(0,pg)),
+    tassaConCard: parseFloat(document.getElementById('s-tassa-card').value)||0.20,
+    tassaSenzaCard: parseFloat(document.getElementById('s-tassa-nocard').value)||0.50
+  };
+  await db.collection('martediplus_settings').doc('main').set(state.settings);
+  saveLocal(); showToast('✓ Impostazioni salvate'); renderAll();
+}
+
+// ── CARD ──
+function aggiornaCardSettimana() {
+  const wk = document.getElementById('nc-settimana')?.value;
+  const el = document.getElementById('nc-settimana-label');
+  if (el && wk) el.textContent = '📅 Martedì ' + getMartediDiSettimana(wk);
+  updateCardPreview();
+}
+function updateCardPreview() {
+  const s=state.settings;
+  document.getElementById('nc-preview-cost').textContent=fmt(s.costoCard);
+  document.getElementById('nc-preview-gest').textContent=fmt(s.costoCard*s.percGestori/100);
+  document.getElementById('nc-preview-crea').textContent=fmt(s.costoCard*(100-s.percGestori)/100);
+  // Usa la settimana selezionata come dataInizio
+  const selWk=document.getElementById('nc-settimana');
+  const di=selWk?selWk.value:null;
+  const prev=document.getElementById('nc-scad-preview');
+  if (di) prev.textContent='Scadenza: '+fmtDateLong(calcolaScadenza(di,s.durataSettimane))+' ('+s.durataSettimane+' sett.)';
+  else prev.textContent='';
+}
+async function aggiungiCard() {
+  const nome=document.getElementById('nc-nome').value.trim();
+  const num=document.getElementById('nc-num').value.trim();
+  // dataInizio = martedì della settimana selezionata
+  const selWk=document.getElementById('nc-settimana');
+  const dataInizio=selWk?selWk.value:currentWeekKey();
+  if (!nome){showToast('⚠ Inserisci il nome');return;}
+  if (!num){showToast('⚠ Inserisci il numero tessera');return;}
+  if (!dataInizio){showToast('⚠ Seleziona la settimana');return;}
+  const s=state.settings;
+  const credito=parseFloat(document.getElementById('nc-credito').value)||0;
+  const card={
+    id:Date.now(), nome, num, credito, creditoIniziale:credito,
+    note:document.getElementById('nc-note').value.trim(),
+    dataCreazione:today(), dataInizio,
+    dataScadenza:calcolaScadenza(dataInizio,s.durataSettimane),
+    durataSettimane:s.durataSettimane, percGestori:s.percGestori,
+    attiva:true, scaduta:false
+  };
+  state.cards.push(card);
+  const v={
+    id:Date.now()+1, cardId:card.id, cardNome:nome, cardNum:num,
+    importo:s.costoCard, gestori:s.costoCard*s.percGestori/100,
+    creatori:s.costoCard*(100-s.percGestori)/100,
+    data:dataInizio, tipo:'vendita',
+    weekKey:dataInizio
+  };
+  state.venditeCard.push(v);
+  await saveToFirebase('cards',card.id,card);
+  await saveToFirebase('venditeCard',v.id,v);
+  await salvaCliente(nome);
+  saveLocal();
+  closeSheet('sheet-nuova-card');
+  ['nc-nome','nc-num','nc-credito','nc-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('nc-ac').classList.remove('show');
+  document.getElementById('nc-scad-preview').textContent='';
+  showToast('♦ Card creata!'); renderAll();
+}
+function aggiornaStatiScadenza() {
+  state.cards.forEach(c=>{ if(!c.scaduta&&isScaduta(c)){c.scaduta=true;saveToFirebase('cards',c.id,c);} });
+  saveLocal();
+}
+function apriDettaglioCard(id) {
+  const card=state.cards.find(c=>c.id===id); if(!card) return;
+  const scaduta=isScaduta(card);
+  document.getElementById('detail-id').value=id;
+  document.getElementById('detail-title').textContent='♦ '+card.nome+' · #'+card.num;
+  document.getElementById('detail-credito').textContent=fmt(card.credito);
+  document.getElementById('detail-data-inizio').textContent=fmtDateLong(card.dataInizio||card.dataCreazione);
+  document.getElementById('detail-data-scad').textContent=card.dataScadenza?fmtDateLong(card.dataScadenza):'—';
+  document.getElementById('detail-sett-usate').textContent=(card.durataSettimane||state.settings.durataSettimane)+' sett.';
+  document.getElementById('det-penale-val').textContent=state.settings.penaleRimborso.toFixed(2).replace('.',',');
+  document.getElementById('det-durata-sett').textContent=card.durataSettimane||state.settings.durataSettimane;
+  document.getElementById('detail-stato-box').innerHTML=scaduta
+    ?'<span class="badge badge-red">⏰ Scaduta</span>'
+    :'<span class="badge badge-green">Attiva</span>';
+  // Carica % gestori corrente per questa card
+  const percEl=document.getElementById('det-perc-gestori');
+  if(percEl) percEl.value=card.percGestori!==undefined?card.percGestori:state.settings.percGestori;
+  const noteEl=document.getElementById('det-perc-note');
+  if(noteEl) noteEl.textContent='% attuale: gestori '+(card.percGestori!==undefined?card.percGestori:state.settings.percGestori)+'% / creatori '+(100-(card.percGestori!==undefined?card.percGestori:state.settings.percGestori))+'%';
+  document.getElementById('detail-azioni-attiva').style.display=scaduta?'none':'block';
+  document.getElementById('detail-azioni-scaduta').style.display=scaduta?'block':'none';
+  openSheet('sheet-card-detail');
+}
+
+// Salva la % gestori per questa specifica card e ricalcola le vendite associate
+async function salvaPercCard() {
+  const id=parseInt(document.getElementById('detail-id').value);
+  const nuovaPerc=parseInt(document.getElementById('det-perc-gestori').value);
+  if(isNaN(nuovaPerc)||nuovaPerc<0||nuovaPerc>100){showToast('⚠ % non valida (0-100)');return;}
+  const card=state.cards.find(c=>c.id===id); if(!card) return;
+  card.percGestori=nuovaPerc;
+  await saveToFirebase('cards',card.id,card);
+  // Aggiorna le venditeCard associate (ricalcola gestori/creatori)
+  let changed=false;
+  state.venditeCard.forEach(v=>{
+    if(v.cardId===id){
+      v.gestori=v.importo*nuovaPerc/100;
+      v.creatori=v.importo*(100-nuovaPerc)/100;
+      saveToFirebase('venditeCard',v.id,v);
+      changed=true;
+    }
+  });
+  if(changed) saveLocal();
+  saveLocal();
+  const noteEl=document.getElementById('det-perc-note');
+  if(noteEl) noteEl.textContent='✓ Salvato — gestori '+nuovaPerc+'% / creatori '+(100-nuovaPerc)+'%';
+  showToast('✓ Percentuale aggiornata'); renderAll();
+}
+async function ricaricaCard() {
+  const id=parseInt(document.getElementById('detail-id').value);
+  const importo=parseFloat(document.getElementById('det-ricarica').value);
+  if(!importo||importo<=0){showToast('⚠ Inserisci importo');return;}
+  const card=state.cards.find(c=>c.id===id); if(!card) return;
+  card.credito+=importo; document.getElementById('det-ricarica').value='';
+  await saveToFirebase('cards',card.id,card);
+  saveLocal(); closeSheet('sheet-card-detail'); showToast('✓ Ricaricato '+fmt(importo)); renderAll();
+}
+async function registraPenale() {
+  const id=parseInt(document.getElementById('detail-id').value);
+  const card=state.cards.find(c=>c.id===id); if(!card) return;
+  const penale=state.settings.penaleRimborso;
+  const p={id:Date.now(),cardId:id,cardNome:card.nome,importo:penale,data:today()};
+  state.penali.push(p);
+  await saveToFirebase('penali',p.id,p);
+  saveLocal(); closeSheet('sheet-card-detail'); showToast('✓ Penale '+fmt(penale)+' registrata'); renderAll();
+}
+async function annullaCard() {
+  const id=parseInt(document.getElementById('detail-id').value);
+  if(!confirm('Annullare questa card? Saranno rimossi tutti i guadagni associati.')) return;
+  state.cards=state.cards.filter(c=>c.id!==id);
+  await deleteFromFirebase('cards',id);
+  const vR=state.venditeCard.filter(v=>v.cardId===id);
+  state.venditeCard=state.venditeCard.filter(v=>v.cardId!==id);
+  for(const v of vR) await deleteFromFirebase('venditeCard',v.id);
+  const pR=state.penali.filter(p=>p.cardId===id);
+  state.penali=state.penali.filter(p=>p.cardId!==id);
+  for(const p of pR) await deleteFromFirebase('penali',p.id);
+  saveLocal(); closeSheet('sheet-card-detail'); showToast('✕ Card annullata'); renderAll();
+}
+async function eliminaCard() {
+  const id=parseInt(document.getElementById('detail-id').value);
+  const card=state.cards.find(c=>c.id===id); if(!card) return;
+  if(!isScaduta(card)){showToast('⚠ La card non è ancora scaduta');return;}
+  if(!confirm('Archiviare la card di '+card.nome+'?')) return;
+  const arch={...card, archiviataIl:today(), attiva:false};
+  state.cardStorico.push(arch);
+  state.cards=state.cards.filter(c=>c.id!==id);
+  await saveToFirebase('cardStorico',id,arch);
+  await deleteFromFirebase('cards',id);
+  saveLocal(); closeSheet('sheet-card-detail'); showToast('🗄 Card archiviata'); renderAll();
+}
+async function rinnovaCard() {
+  const id=parseInt(document.getElementById('detail-id').value);
+  const card=state.cards.find(c=>c.id===id); if(!card) return;
+  const s=state.settings;
+  const nuovoInizio=currentWeekKey();
+  card.scaduta=false; card.dataInizio=nuovoInizio;
+  card.dataScadenza=calcolaScadenza(nuovoInizio,card.durataSettimane||s.durataSettimane);
+  const v={
+    id:Date.now(), cardId:card.id, cardNome:card.nome, cardNum:card.num,
+    importo:s.costoCard, gestori:s.costoCard*s.percGestori/100,
+    creatori:s.costoCard*(100-s.percGestori)/100,
+    data:today(), tipo:'rinnovo'
+  };
+  state.venditeCard.push(v);
+  await saveToFirebase('cards',card.id,card);
+  await saveToFirebase('venditeCard',v.id,v);
+  saveLocal(); closeSheet('sheet-card-detail');
+  showToast('♻ Card rinnovata! Scade '+fmtDate(card.dataScadenza)); renderAll();
+}
+function renderStoricoCard() {
+  const el=document.getElementById('lista-storico-card');
+  if(state.cardStorico.length===0){el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nessuna card nello storico.</div></div>';return;}
+  const sorted=[...state.cardStorico].sort((a,b)=>(b.archiviataIl||'').localeCompare(a.archiviataIl||''));
+  el.innerHTML=sorted.map(c=>`
+    <div class="storico-card-item">
+      <div><div style="font-weight:600;font-size:14px">${c.nome} <span style="color:var(--muted)">#${c.num}</span></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${fmtDate(c.dataInizio)} → ${fmtDate(c.dataScadenza)} · arch. ${fmtDate(c.archiviataIl)}</div></div>
+      <div style="text-align:right;flex-shrink:0"><div style="font-family:var(--syne);font-size:15px;font-weight:700;color:var(--gold)">${fmt(c.credito)}</div><div style="font-size:10px;color:var(--muted)">credito rimasto</div></div>
+    </div>`).join('');
+}
+
+// ── ORDINI ──
+function getTassaDefault() { return document.getElementById('ord-tipo').value==='card'?state.settings.tassaConCard:state.settings.tassaSenzaCard; }
+function aggiornaTipoOrdine() {
+  const tipo=document.getElementById('ord-tipo').value;
+  document.getElementById('ord-card-section').style.display=tipo==='card'?'block':'none';
+  document.getElementById('ord-nocard-section').style.display=tipo==='nocard'?'block':'none';
+  if(!tassaModificataManualmente) document.getElementById('ord-tassa-input').value=getTassaDefault().toFixed(2);
+  document.getElementById('ord-tassa-note').textContent=tipo==='card'?'Scalata dal credito card automaticamente':'Tassa standard (senza card)';
+}
+function onTassaInput() {
+  const def=getTassaDefault(), val=parseFloat(document.getElementById('ord-tassa-input').value);
+  tassaModificataManualmente=!isNaN(val)&&Math.abs(val-def)>0.001;
+  document.getElementById('ord-tassa-custom-note').style.display=tassaModificataManualmente?'block':'none';
+}
+function resetTassaDefault() {
+  tassaModificataManualmente=false;
+  document.getElementById('ord-tassa-input').value=getTassaDefault().toFixed(2);
+  document.getElementById('ord-tassa-custom-note').style.display='none';
+}
+function popolaCardSelect() {
+  const sel=document.getElementById('ord-card-sel');
+  const attive=state.cards.filter(c=>c.attiva&&!isScaduta(c));
+  sel.innerHTML=attive.length===0?'<option value="">Nessuna card attiva</option>':attive.map(c=>`<option value="${c.id}">${c.nome} · #${c.num} · ${fmt(c.credito)}</option>`).join('');
+  document.getElementById('ord-tassa-input').value=getTassaDefault().toFixed(2);
+  document.getElementById('ord-tassa-note').textContent='Tassa fissa indipendente dal pasto';
+  document.getElementById('ord-tassa-custom-note').style.display='none';
+  document.getElementById('ord-importo-pasto').value='';
+  aggiornaInfoCard();
+}
+function aggiornaInfoCard() {
+  const cardId=parseInt(document.getElementById('ord-card-sel').value);
+  const card=state.cards.find(c=>c.id===cardId);
+  const pasto=parseFloat(document.getElementById('ord-importo-pasto').value)||0;
+  const infoEl=document.getElementById('ord-card-info');
+  if(!card){infoEl.textContent='💡 Inserisci l\'importo del pasto — verrà scalato dal credito della card';infoEl.style.background='var(--blue-dim)';infoEl.style.color='var(--blue-light)';return;}
+  if(pasto<=0){infoEl.textContent='💳 '+card.nome+' · Credito attuale: '+fmt(card.credito);infoEl.style.background='var(--blue-dim)';infoEl.style.color='var(--blue-light)';return;}
+  const rimanente=card.credito-pasto;
+  if(rimanente<0){
+    infoEl.innerHTML='⚠️ <strong>Credito insufficiente!</strong> Credito disponibile: '+fmt(card.credito)+' · Mancano: '+fmt(-rimanente);
+    infoEl.style.background='var(--red-dim)'; infoEl.style.color='var(--red)';
+  } else {
+    infoEl.innerHTML='✓ Verrà scalato '+fmt(pasto)+' · Credito rimasto: '+fmt(rimanente);
+    infoEl.style.background='var(--blue-dim)'; infoEl.style.color='var(--blue-light)';
+  }
+}
+async function registraOrdine() {
+  const tipo=document.getElementById('ord-tipo').value, s=state.settings;
+  const tassaInput=parseFloat(document.getElementById('ord-tassa-input').value);
+  const tassa=isNaN(tassaInput)?(tipo==='card'?s.tassaConCard:s.tassaSenzaCard):tassaInput;
+  const selWk=document.getElementById('ord-settimana');
+  const weekKey=selWk?selWk.value:currentWeekKey();
+  const dataOrdine=weekKey;
+  const ordine={id:Date.now(),tipo,tassa,tassaPersonalizzata:tassaModificataManualmente,weekKey,data:dataOrdine};
+  if(tipo==='card'){
+    const cardId=parseInt(document.getElementById('ord-card-sel').value);
+    const card=state.cards.find(c=>c.id===cardId);
+    if(!card){showToast('⚠ Seleziona una card');return;}
+    const pastoBrutto=parseFloat(document.getElementById('ord-importo-pasto').value);
+    if(isNaN(pastoBrutto)||pastoBrutto<=0){showToast('⚠ Inserisci quanto ha speso al pollo');return;}
+    if(pastoBrutto>card.credito){showToast('⚠ Credito insufficiente ('+fmt(card.credito)+')');return;}
+    card.credito-=pastoBrutto;
+    ordine.cardId=cardId; ordine.cardNome=card.nome; ordine.cardNum=card.num; ordine.speso=pastoBrutto;
+    await saveToFirebase('cards',card.id,card);
+  } else {
+    const nomeNC=document.getElementById('ord-nome-nocard').value.trim()||'Cliente occasionale';
+    ordine.nomeNoCard=nomeNC; await salvaCliente(nomeNC);
+  }
+  state.ordini.push(ordine);
+  await saveToFirebase('ordini',ordine.id,ordine);
+  saveLocal(); closeSheet('sheet-ordine');
+  document.getElementById('ord-nome-nocard').value='';
+  document.getElementById('nc-ac-ord').classList.remove('show');
+  document.getElementById('ord-importo-pasto').value='';
+  tassaModificataManualmente=false; showToast('✓ Ordine registrato'); renderAll();
+}
+async function eliminaOrdine(id) {
+  if(!confirm('Eliminare questo ordine?')) return;
+  const ordine=state.ordini.find(o=>o.id===id); if(!ordine) return;
+  if(ordine.tipo==='card'&&ordine.cardId&&ordine.speso>0){
+    const card=state.cards.find(c=>c.id===ordine.cardId);
+    if(card){card.credito+=ordine.speso;await saveToFirebase('cards',card.id,card);}
+  }
+  state.ordini=state.ordini.filter(o=>o.id!==id);
+  await deleteFromFirebase('ordini',id);
+  saveLocal(); showToast('Ordine eliminato'); renderAll();
+}
+
+// ── REGISTRO TRANSAZIONI ──
+const TIPI_TX = {
+  tassa:         'Tassa ordine',
+  credito_card:  'Credito card',
+  costo_card:    'Costo card',
+  penale:        'Penale rimborso',
+  liquidazione:  'Liquidazione guadagni',
+  altro:         'Altro'
+};
+
+function aggiornaTxTipo() {
+  const da=document.getElementById('tx-da').value;
+  const a=document.getElementById('tx-a').value;
+  const needCliente=(da==='cliente'||a==='cliente');
+  const wrap=document.getElementById('tx-cliente-nome-wrap');
+  wrap.style.display=needCliente?'block':'none';
+  if(needCliente){
+    const labelEl=document.getElementById('tx-cliente-nome-label');
+    if(da==='cliente') labelEl.textContent='Chi ti paga (cliente specifico)';
+    else labelEl.textContent='A quale cliente stai pagando';
+    // Mostra clienti già conosciuti come chip selezionabili
+    const notiWrap=document.getElementById('tx-clienti-noti-wrap');
+    const noti=[...new Set([
+      ...state.cards.map(c=>c.nome),
+      ...state.cardStorico.map(c=>c.nome),
+      ...state.clienti.map(c=>c.nome||c)
+    ])].filter(Boolean).sort();
+    if(noti.length>0){
+      notiWrap.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Clienti conosciuti (tocca per selezionare):</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+        +noti.map(n=>`<button onclick="selezionaClienteTx('${n.replace(/'/g,"\\'")}') " style="background:var(--s3);border:1px solid var(--border);border-radius:20px;color:var(--text);padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;" id="chip-tx-${n.replace(/[^a-z0-9]/gi,'_')}">${n}</button>`).join('')
+        +'</div>';
+    } else {
+      notiWrap.innerHTML='';
+    }
+  }
+}
+function selezionaClienteTx(nome) {
+  document.getElementById('tx-cliente-nome').value=nome;
+  document.getElementById('tx-ac').classList.remove('show');
+  // evidenzia il chip selezionato
+  document.querySelectorAll('[id^="chip-tx-"]').forEach(b=>{ b.style.background='var(--s3)'; b.style.borderColor='var(--border)'; b.style.color='var(--text)'; });
+  const chipId='chip-tx-'+nome.replace(/[^a-z0-9]/gi,'_');
+  const chip=document.getElementById(chipId);
+  if(chip){ chip.style.background='var(--red-dim)'; chip.style.borderColor='var(--red)'; chip.style.color='var(--red)'; }
+}
+
+function aggiornaTxSettimana() {
+  const wk=document.getElementById('tx-settimana').value;
+  const el=document.getElementById('tx-settimana-label');
+  if(el) el.textContent='📅 Martedì '+getMartediDiSettimana(wk);
+}
+
+async function salvaTransazione() {
+  const da=document.getElementById('tx-da').value;
+  const a=document.getElementById('tx-a').value;
+  const importo=parseFloat(document.getElementById('tx-importo').value);
+  const tipo=document.getElementById('tx-tipo').value;
+  const note=document.getElementById('tx-note').value.trim();
+  const clienteNome=document.getElementById('tx-cliente-nome').value.trim();
+  // Usa la settimana selezionata per determinare la data
+  const selWk=document.getElementById('tx-settimana');
+  const weekKey=selWk?selWk.value:currentWeekKey();
+
+  if(!importo||importo<=0){showToast('⚠ Inserisci importo');return;}
+  if(da===a){showToast('⚠ Mittente e destinatario uguali');return;}
+  if((da==='cliente'||a==='cliente')&&!clienteNome){showToast('⚠ Inserisci il nome del cliente');return;}
+
+  const tx={
+    id:Date.now(), da, a, importo,
+    data: weekKey, // data = martedì della settimana scelta
+    tipo, note,
+    clienteNome:(da==='cliente'||a==='cliente')?clienteNome:'',
+    weekKey
+  };
+  state.transazioni.push(tx);
+  await saveToFirebase('transazioni',tx.id,tx);
+  if(clienteNome) await salvaCliente(clienteNome);
+  saveLocal(); closeSheet('sheet-nuova-transazione');
+  showToast('✓ Transazione salvata'); renderAll();
+}
+
+// Calcola saldo di ogni persona basato sulle transazioni manuali
+// Saldo = somma entrate - somma uscite
+function calcSaldi() {
+  const saldi={edoardo:0,simone:0,gabriele:0,mario:0,portafoglio:0};
+  state.transazioni.forEach(tx=>{
+    if(saldi[tx.a]!==undefined) saldi[tx.a]+=tx.importo;
+    if(saldi[tx.da]!==undefined) saldi[tx.da]-=tx.importo;
+  });
+  return saldi;
+}
+
+// Calcola guadagni teorici per persona
+function calcGuadagniTeorici() {
+  const s=state.settings;
+  const tutteTasse=state.ordini.reduce((a,o)=>a+o.tassa,0);
+  const gestoriDaCard=state.venditeCard.reduce((a,v)=>a+v.gestori,0);
+  const creatoriDaCard=state.venditeCard.reduce((a,v)=>a+v.creatori,0);
+  const totalePenali=state.penali.reduce((a,p)=>a+p.importo,0);
+  const totGestori=gestoriDaCard+tutteTasse;
+  const totCreatori=creatoriDaCard+totalePenali;
+  return {
+    edoardo:   totGestori/2,
+    simone:    totGestori/2,
+    gabriele:  totCreatori/2,
+    mario:     totCreatori/2,
+    totGestori, totCreatori,
+    gestoriDaCard, tutteTasse, creatoriDaCard, totalePenali
+  };
+}
+
+// Conti in sospeso: differenza tra teorico e ricevuto da transazioni
+function calcSospesi() {
+  const teorici=calcGuadagniTeorici();
+  const saldi=calcSaldi();
+  const sospesi=[];
+  ['edoardo','simone','gabriele','mario'].forEach(id=>{
+    const teorico=teorici[id]||0;
+    const ricevuto=saldi[id]||0;
+    const diff=teorico-ricevuto;
+    if(Math.abs(diff)>0.005){
+      sospesi.push({persona:id, teorico, ricevuto, diff});
+    }
+  });
+  return sospesi;
+}
+
+function apriDettaglioPersona(personaId) {
+  const teorici=calcGuadagniTeorici();
+  const saldi=calcSaldi();
+  const teorico=teorici[personaId]||0;
+  const ricevuto=saldi[personaId]||0;
+  const diff=teorico-ricevuto;
+
+  document.getElementById('persona-detail-title').textContent=nomePersona(personaId);
+  document.getElementById('pd-teorico').textContent=fmt(teorico);
+  document.getElementById('pd-ricevuto').textContent=fmt(ricevuto);
+
+  const sosBox=document.getElementById('pd-sospeso-box');
+  const sosTxt=document.getElementById('pd-sospeso-txt');
+  if(Math.abs(diff)>0.005){
+    sosBox.style.display='block';
+    if(diff>0) sosTxt.textContent='Deve ancora ricevere '+fmt(diff);
+    else sosTxt.textContent='Ha ricevuto '+fmt(Math.abs(diff))+' in più del teorico';
+  } else { sosBox.style.display='none'; }
+
+  // Movimenti: transazioni che coinvolgono questa persona
+  const movimenti=state.transazioni
+    .filter(tx=>tx.da===personaId||tx.a===personaId)
+    .sort((a,b)=>(b.data||b.weekKey||'').localeCompare(a.data||a.weekKey||''));
+
+  const movEl=document.getElementById('pd-movimenti');
+  if(movimenti.length===0){
+    movEl.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">Nessun movimento registrato</div>';
+  } else {
+    movEl.innerHTML=movimenti.map(tx=>{
+      const entrata=tx.a===personaId;
+      const controparte=entrata?tx.da:tx.a;
+      const nomeContro=controparte==='cliente'?(tx.clienteNome||'Cliente'):nomePersona(controparte);
+      const settLabel=tx.weekKey?fmtWeekLabel(tx.weekKey):fmtDate(tx.data);
+      return `<div class="tx-item">
+        <div class="tx-arrow">${entrata?'⬇':'⬆'}</div>
+        <div class="tx-body">
+          <div class="tx-chi">${entrata?'Da: ':'A: '}${nomeContro}</div>
+          <div class="tx-desc">${TIPI_TX[tx.tipo]||tx.tipo}${tx.note?' · '+tx.note:''} · ${settLabel}</div>
+        </div>
+        <div class="tx-importo ${entrata?'entrata':'uscita'}">${entrata?'+':'-'}${fmt(tx.importo)}</div>
+      </div>`;
+    }).join('');
+  }
+  openSheet('sheet-persona-detail');
+}
+
+// Dettaglio cliente dalla top list: mostra tutti i movimenti (ordini, card, penali, transazioni)
+function apriDettaglioCliente(nomeCliente) {
+  const stats = calcStatClienti().find(c => c.nome === nomeCliente) || {tasse:0, costi:0, penali:0, ordini:0, totale:0};
+  document.getElementById('cd-title').textContent = '👤 ' + nomeCliente;
+  document.getElementById('cd-tasse').textContent = fmt(stats.tasse);
+  document.getElementById('cd-costi').textContent = fmt(stats.costi);
+  document.getElementById('cd-penali').textContent = fmt(stats.penali);
+  document.getElementById('cd-totale').textContent = fmt(stats.totale);
+
+  const movEl = document.getElementById('cd-movimenti');
+  const items = [];
+
+  // Ordini
+  state.ordini.filter(o=>(o.tipo==='card'?o.cardNome:o.nomeNoCard)===nomeCliente)
+    .forEach(o=>{
+      const settLabel = o.weekKey ? fmtWeekLabel(o.weekKey) : fmtDate(o.data);
+      items.push({
+        data: o.data||o.weekKey||'', sortKey: o.weekKey||o.data||'',
+        html: `<div class="tx-item">
+          <div class="tx-arrow">🛒</div>
+          <div class="tx-body">
+            <div class="tx-chi">Ordine ${o.tipo==='card'?'(card #'+o.cardNum+')':'(senza card)'}</div>
+            <div class="tx-desc">Tassa pagata · ${settLabel}</div>
+          </div>
+          <div class="tx-importo uscita">-${fmt(o.tassa)}</div>
+        </div>`
+      });
+    });
+
+  // Vendite card
+  state.venditeCard.filter(v=>v.cardNome===nomeCliente)
+    .forEach(v=>{
+      const settLabel = v.weekKey ? fmtWeekLabel(v.weekKey) : fmtDate(v.data);
+      items.push({
+        sortKey: v.weekKey||v.data||'',
+        html: `<div class="tx-item">
+          <div class="tx-arrow">♦</div>
+          <div class="tx-body">
+            <div class="tx-chi">${v.tipo==='rinnovo'?'Rinnovo':'Acquisto'} card #${v.cardNum||''}</div>
+            <div class="tx-desc">Costo card · ${settLabel}</div>
+          </div>
+          <div class="tx-importo uscita">-${fmt(v.importo)}</div>
+        </div>`
+      });
+    });
+
+  // Penali
+  state.penali.filter(p=>p.cardNome===nomeCliente)
+    .forEach(p=>{
+      items.push({
+        sortKey: p.data||'',
+        html: `<div class="tx-item">
+          <div class="tx-arrow">⚠</div>
+          <div class="tx-body">
+            <div class="tx-chi">Penale rimborso</div>
+            <div class="tx-desc">${fmtDate(p.data)}</div>
+          </div>
+          <div class="tx-importo uscita">-${fmt(p.importo)}</div>
+        </div>`
+      });
+    });
+
+  // Transazioni manuali che coinvolgono il cliente
+  state.transazioni.filter(tx=>tx.clienteNome===nomeCliente)
+    .forEach(tx=>{
+      const entrata = tx.a==='cliente';
+      const settLabel = tx.weekKey ? fmtWeekLabel(tx.weekKey) : fmtDate(tx.data);
+      items.push({
+        sortKey: tx.weekKey||tx.data||'',
+        html: `<div class="tx-item">
+          <div class="tx-arrow">${entrata?'⬇':'⬆'}</div>
+          <div class="tx-body">
+            <div class="tx-chi">${entrata?'Rimborso da':'Pagamento a'} ${nomePersona(entrata?tx.da:tx.a)}</div>
+            <div class="tx-desc">${TIPI_TX[tx.tipo]||tx.tipo}${tx.note?' · '+tx.note:''} · ${settLabel}</div>
+          </div>
+          <div class="tx-importo ${entrata?'entrata':'uscita'}">${entrata?'+':'-'}${fmt(tx.importo)}</div>
+        </div>`
+      });
+    });
+
+  if (items.length === 0) {
+    movEl.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">Nessun movimento</div>';
+  } else {
+    items.sort((a,b)=>b.sortKey.localeCompare(a.sortKey));
+    movEl.innerHTML = items.map(i=>i.html).join('');
+  }
+  openSheet('sheet-cliente-detail');
+}
+
+// ── CALCOLI TOTALI ──
+function calcTotali() {
+  const s=state.settings;
+  const totVenditeCard=state.venditeCard.reduce((a,v)=>a+v.importo,0);
+  const gestoriDaCard=state.venditeCard.reduce((a,v)=>a+v.gestori,0);
+  const creatoriDaCard=state.venditeCard.reduce((a,v)=>a+v.creatori,0);
+  const tutteTasse=state.ordini.reduce((a,o)=>a+o.tassa,0);
+  const totalePenali=state.penali.reduce((a,p)=>a+p.importo,0);
+  const wk=currentWeekKey();
+  return {
+    totVenditeCard, gestoriDaCard, creatoriDaCard,
+    gestoriDaTasse:tutteTasse, gestoriNetto:gestoriDaCard+tutteTasse,
+    tutteTasse, totalePenali,
+    tasseSettimana:state.ordini.filter(o=>o.weekKey===wk).reduce((a,o)=>a+o.tassa,0),
+    ordiniSettimana:state.ordini.filter(o=>o.weekKey===wk).length,
+    cardAttive:state.cards.filter(c=>!isScaduta(c)).length,
+    cardTotVendute:state.venditeCard.length
+  };
+}
+function calcStatClienti() {
+  const map={};
+  state.ordini.forEach(o=>{
+    const n=o.tipo==='card'?o.cardNome:(o.nomeNoCard||'Occasionale');
+    if(!map[n]) map[n]={nome:n,tasse:0,costi:0,penali:0,ordini:0};
+    map[n].tasse+=o.tassa; map[n].ordini++;
+  });
+  state.venditeCard.forEach(v=>{
+    if(!map[v.cardNome]) map[v.cardNome]={nome:v.cardNome,tasse:0,costi:0,penali:0,ordini:0};
+    map[v.cardNome].costi+=v.importo;
+  });
+  state.penali.forEach(p=>{
+    if(!map[p.cardNome]) map[p.cardNome]={nome:p.cardNome,tasse:0,costi:0,penali:0,ordini:0};
+    map[p.cardNome].penali+=p.importo;
+  });
+  return Object.values(map).map(c=>({...c,totale:c.tasse+c.costi+c.penali})).sort((a,b)=>b.totale-a.totale);
+}
+
+// ── RENDER DASHBOARD ──
+function renderDashboard() {
+  const t=calcTotali(), s=state.settings;
+  const teorici=calcGuadagniTeorici();
+  const saldi=calcSaldi();
+
+  document.getElementById('d-guadagno-totale').textContent=fmt(t.tutteTasse+t.totVenditeCard);
+  document.getElementById('d-card-tot').textContent=t.cardTotVendute;
+  document.getElementById('d-clienti').textContent=t.cardAttive;
+  document.getElementById('d-week').textContent=fmt(t.tasseSettimana);
+  document.getElementById('d-total').textContent=fmt(t.tutteTasse+t.totVenditeCard);
+  document.getElementById('d-perc-gestori').textContent=s.percGestori;
+  document.getElementById('d-perc-creatori').textContent=100-s.percGestori;
+  document.getElementById('d-gest-tasse').textContent=fmt(t.gestoriDaTasse);
+  document.getElementById('d-gest-card').textContent=fmt(t.gestoriDaCard);
+  document.getElementById('d-gest-tot').textContent=fmt(t.gestoriNetto);
+  document.getElementById('d-crea-tot').textContent=fmt(t.creatoriDaCard+t.totalePenali);
+  document.getElementById('d-penali').textContent=fmt(t.totalePenali);
+
+  // Guadagni per persona + warning se saldo diverso dal teorico
+  ['edo','simo','gabri','mario'].forEach((k,i)=>{
+    const pid=['edoardo','simone','gabriele','mario'][i];
+    const teo=teorici[pid]||0;
+    const ric=saldi[pid]||0;
+    document.getElementById('d-guad-'+k).textContent=fmt(teo);
+    const warn=document.getElementById('d-warn-'+k);
+    warn.style.display=Math.abs(teo-ric)>0.005?'block':'none';
+  });
+
+  // Grafico settimane
+  const weekMap={};
+  state.ordini.forEach(o=>{
+    if(!weekMap[o.weekKey]) weekMap[o.weekKey]={tasse:0,ordini:0,gestDaCard:0};
+    weekMap[o.weekKey].tasse+=o.tassa; weekMap[o.weekKey].ordini++;
+  });
+  state.venditeCard.forEach(v=>{
+    const wk=getWeekKey(v.data||today());
+    if(!weekMap[wk]) weekMap[wk]={tasse:0,ordini:0,gestDaCard:0};
+    weekMap[wk].gestDaCard+=v.gestori;
+  });
+  const weeks=Object.entries(weekMap).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  const chartEl=document.getElementById('chart-bars');
+  if(weeks.length===0){chartEl.innerHTML='<div style="width:100%;text-align:center;font-size:12px;color:var(--muted)">Nessun dato</div>';}
+  else {
+    const wk=currentWeekKey(), last8=weeks.slice(-8);
+    const maxVal=Math.max(...last8.map(([,d])=>d.tasse+(d.gestDaCard||0)),0.01);
+    chartEl.innerHTML=last8.map(([key,d])=>{
+      const totG=d.tasse+(d.gestDaCard||0);
+      const h=Math.max(4,Math.round((totG/maxVal)*72));
+      return `<div class="chart-bar-wrap">
+        <div class="chart-bar-val">${totG>0?fmt(totG).replace('€',''):''}</div>
+        <div class="chart-bar${key===wk?' current':''}" style="height:${h}px"></div>
+        <div class="chart-bar-label">${fmtWeekLabel(key)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Top clienti — cliccabili
+  const top=calcStatClienti().slice(0,5);
+  const topEl=document.getElementById('top-clienti');
+  if(top.length===0){topEl.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">Nessun dato ancora</div>';}
+  else {
+    const rc=['first','second','third'];
+    topEl.innerHTML=top.map((c,i)=>`
+      <div class="client-stat-item" onclick="apriDettaglioCliente('${c.nome.replace(/'/g,"\\'")}')" style="cursor:pointer">
+        <div class="client-stat-rank ${rc[i]||''}">${i+1}</div>
+        <div style="flex:1"><div class="client-stat-name">${c.nome}</div>
+        <div class="client-stat-sub">${c.ordini} ordini · card ${fmt(c.costi)} · penali ${fmt(c.penali)}</div></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="client-stat-val">${fmt(c.totale)}</div>
+          <div style="color:var(--muted);font-size:11px">›</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Storico settimane
+  const histEl=document.getElementById('d-history');
+  if(weeks.length===0){histEl.innerHTML='<div class="empty"><div class="empty-text">Nessun dato ancora</div></div>';return;}
+  const sorted=[...weeks].sort((a,b)=>b[0].localeCompare(a[0])).slice(0,10);
+  histEl.innerHTML='<div class="card">'+sorted.map(([wk,d])=>{
+    const totG=d.tasse+(d.gestDaCard||0);
+    const mar=getMartediDiSettimana(wk);
+    return `<div class="hist-item" onclick="apriSettimana('${wk}')">
+      <div><div class="hist-label">📅 ${mar.split(',').slice(0,2).join(',').trim()}</div>
+      <div class="hist-sub">${d.ordini} ordini · gestori ${fmt(totG)}</div></div>
+      <div style="display:flex;align-items:center"><div class="hist-val green">${fmt(d.tasse)}</div><div class="hist-arrow">›</div></div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function apriSettimana(weekKey) {
+  const ordini=state.ordini.filter(o=>o.weekKey===weekKey);
+  const tasse=ordini.reduce((a,o)=>a+o.tassa,0);
+  document.getElementById('week-detail-title').textContent='Settimana del '+fmtWeekLabel(weekKey);
+  document.getElementById('week-detail-martedi').textContent='📅 Martedì '+getMartediDiSettimana(weekKey);
+  document.getElementById('week-detail-tasse').textContent=fmt(tasse);
+  document.getElementById('week-detail-ordini').textContent=ordini.length;
+  const listEl=document.getElementById('week-detail-list');
+  listEl.innerHTML=[...ordini].reverse().map(o=>{
+    const hasCard=o.tipo==='card';
+    const nome=hasCard?o.cardNome+' · #'+o.cardNum:o.nomeNoCard;
+    const detail=hasCard?'dal credito: '+fmt(o.speso||0):'senza card';
+    return `<div class="martedi-item">
+      <div class="mi-left" style="flex:1"><div class="mi-name">${nome}</div><div class="mi-detail">${detail} · ${fmtDate(o.data)}</div></div>
+      <div class="mi-right"><div class="mi-tassa">+${fmt(o.tassa)}</div>
+      <div class="mi-spent">${hasCard?'<span class="badge badge-gold">card</span>':'<span class="badge badge-blue">no card</span>'}</div></div>
+    </div>`;
+  }).join('') || '<div class="empty"><div class="empty-text">Nessun ordine</div></div>';
+  openSheet('sheet-week-detail');
+}
+
+// ── RENDER CARD ──
+function renderCards() {
+  aggiornaStatiScadenza();
+  const attive=state.cards.filter(c=>!isScaduta(c));
+  const scadute=state.cards.filter(c=>isScaduta(c));
+  const hdr=document.getElementById('lista-scadute-header');
+  const scEl=document.getElementById('lista-scadute');
+  if(scadute.length>0){
+    hdr.style.display='block';
+    scEl.innerHTML=scadute.map(c=>`
+      <div class="client-card scaduta" onclick="apriDettaglioCard(${c.id})">
+        <div class="client-top">
+          <div><div class="client-name">${c.nome}</div><div class="client-num">#${c.num}</div></div>
+          <div class="client-credits"><div class="credit-val" style="font-size:16px;color:var(--red)">${fmt(c.credito)}</div><div class="credit-label">credito rimasto</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--muted)">Scaduta il ${fmtDate(c.dataScadenza)}</span>
+          <span class="badge badge-red">⏰ Scaduta</span>
+        </div>
+      </div>`).join('');
+  } else { hdr.style.display='none'; }
+
+  const el=document.getElementById('lista-card');
+  if(attive.length===0){el.innerHTML='<div class="empty"><div class="empty-icon">♦</div><div class="empty-text">Nessuna card attiva.<br>Aggiungine una!</div></div>';return;}
+  el.innerHTML=attive.map(c=>{
+    const perc=Math.min(100,Math.max(0,(c.credito/Math.max(c.creditoIniziale||1,0.01))*100));
+    const oggi=new Date(), scad=c.dataScadenza?new Date(c.dataScadenza+'T12:00:00'):null;
+    const gg=scad?Math.ceil((scad-oggi)/86400000):null;
+    const ggLabel=gg!==null?(gg<=7?`<span style="color:var(--orange);font-weight:600">${gg}gg alla scadenza</span>`:`<span style="color:var(--muted)">${gg}gg rimasti</span>`):'';
+    return `<div class="client-card" onclick="apriDettaglioCard(${c.id})">
+      <div class="client-top">
+        <div><div class="client-name">${c.nome}</div><div class="client-num">#${c.num} · scade ${fmtDate(c.dataScadenza)}</div></div>
+        <div class="client-credits"><div class="credit-val">${fmt(c.credito)}</div><div class="credit-label">credito</div></div>
+      </div>
+      <div class="credit-bar"><div class="credit-fill" style="width:${perc}%"></div></div>
+      <div class="client-footer">${ggLabel}<span class="badge badge-green">Attiva</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER MARTEDI ──
+function renderMartedi() {
+  const wk=currentWeekKey(), t=calcTotali();
+  document.getElementById('m-tasse-sett').textContent=fmt(t.tasseSettimana);
+  document.getElementById('m-ordini-sett').textContent=t.ordiniSettimana;
+  document.getElementById('martedi-week-label').textContent='📅 '+getMartediDiSettimana(wk);
+  const ordini=state.ordini.filter(o=>o.weekKey===wk).reverse();
+  const el=document.getElementById('lista-ordini');
+  if(ordini.length===0){el.innerHTML='<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">Nessun ordine questa settimana.</div></div>';return;}
+  el.innerHTML=ordini.map(o=>{
+    const hasCard=o.tipo==='card';
+    const nome=hasCard?o.cardNome+' · #'+o.cardNum:o.nomeNoCard;
+    const detail=hasCard?'dal credito: '+fmt(o.speso||0):'nessuna card';
+    const icon=o.tassaPersonalizzata?' <span style="color:var(--orange);font-size:10px">✎</span>':'';
+    return `<div class="martedi-item">
+      <div class="mi-left" style="flex:1;min-width:0"><div class="mi-name">${nome}</div><div class="mi-detail">${detail} · ${fmtDate(o.data)}</div></div>
+      <div class="mi-right"><div class="mi-tassa">+${fmt(o.tassa)}${icon}</div>
+      <div class="mi-spent">${hasCard?'<span class="badge badge-gold">card</span>':'<span class="badge badge-blue">no card</span>'}</div></div>
+      <button class="mi-delete" onclick="event.stopPropagation();eliminaOrdine(${o.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER REGISTRO ──
+async function eliminaTransazione(id) {
+  if (!confirm('Eliminare questa transazione?')) return;
+  state.transazioni = state.transazioni.filter(tx => tx.id !== id);
+  await deleteFromFirebase('transazioni', id);
+  saveLocal(); showToast('Transazione eliminata'); renderAll();
+}
+
+function renderRegistro() {
+  const saldi=calcSaldi();
+  const sospesi=calcSospesi();
+
+  // Saldi
+  ['edoardo','simone','gabriele','mario','portafoglio'].forEach(id=>{
+    const el=document.getElementById('saldo-'+id);
+    if(el){
+      const v=saldi[id]||0;
+      el.textContent=fmt(v);
+      el.style.color=v>0?'var(--green)':v<0?'var(--red)':'var(--text)';
+    }
+  });
+
+  // Sospesi
+  const sosEl=document.getElementById('reg-sospeso');
+  if(sospesi.length===0){
+    sosEl.innerHTML='<div style="font-size:13px;color:var(--green);text-align:center;padding:8px">✓ Nessun conto in sospeso</div>';
+  } else {
+    sosEl.innerHTML=sospesi.map(s=>{
+      const manca=s.diff>0;
+      return `<div class="sospeso-item" onclick="apriDettaglioPersona('${s.persona}')" style="cursor:pointer">
+        <div class="sospeso-row">
+          <span class="sospeso-chi">${nomePersona(s.persona)}</span>
+          <span class="sospeso-val">${manca?'deve ricevere':'ha in più'} ${fmt(Math.abs(s.diff))}</span>
+        </div>
+        <div class="sospeso-detail">Teorico: ${fmt(s.teorico)} · Ricevuto dal registro: ${fmt(s.ricevuto)} · tocca per dettagli ›</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Lista transazioni con tasto elimina
+  const listEl=document.getElementById('reg-lista-transazioni');
+  const sorted=[...state.transazioni].sort((a,b)=>
+    (b.data||b.weekKey||'').localeCompare(a.data||a.weekKey||''));
+  if(sorted.length===0){
+    listEl.innerHTML='<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Nessuna transazione ancora.</div></div>';
+    return;
+  }
+  listEl.innerHTML='<div class="card">'+sorted.map(tx=>{
+    const nomeDA=tx.da==='cliente'?(tx.clienteNome||'Cliente'):nomePersona(tx.da);
+    const nomeA=tx.a==='cliente'?(tx.clienteNome||'Cliente'):nomePersona(tx.a);
+    const settLabel=tx.weekKey?fmtWeekLabel(tx.weekKey):fmtDate(tx.data);
+    return `<div class="tx-item">
+      <div class="tx-arrow">💸</div>
+      <div class="tx-body">
+        <div class="tx-chi">${nomeDA} → ${nomeA}</div>
+        <div class="tx-desc">${TIPI_TX[tx.tipo]||tx.tipo}${tx.note?' · '+tx.note:''} · ${settLabel}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div class="tx-importo entrata">${fmt(tx.importo)}</div>
+        <button class="mi-delete" onclick="eliminaTransazione(${tx.id})" title="Elimina">✕</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function renderTopbar() {
+  const d=new Date();
+  document.getElementById('topbar-date').textContent=d.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'});
+  // Settimana corrente = Sett. 1, precedenti = 0, -1, ecc. — ma mostriamo 1 per corrente
+  document.getElementById('topbar-week-num').textContent='Sett. 1 · '+fmtWeekLabel(currentWeekKey());
+}
+function renderAll() {
+  renderTopbar(); renderDashboard(); renderCards(); renderMartedi(); renderRegistro(); loadSettingsUI();
+}
+
+// ── RESET ──
+async function resetDati() {
+  if(!confirm('Sei sicuro? Tutti i dati saranno eliminati definitivamente.')) return;
+  for(const coll of ['cards','cardStorico','ordini','venditeCard','penali','clienti','transazioni']){
+    const snap=await db.collection('martediplus_'+coll).get();
+    for(const doc of snap.docs) await doc.ref.delete();
+  }
+  await db.collection('martediplus_settings').doc('main').delete();
+  state={settings:{...DEFAULT_SETTINGS},cards:[],cardStorico:[],ordini:[],venditeCard:[],penali:[],clienti:[],transazioni:[]};
+  saveLocal(); showToast('Reset completato'); renderAll();
+}
+
+loadLocal(); normalizzaDatiVecchi(); renderAll(); loadFromFirebase();
+</script>
+</body>
+</html>
